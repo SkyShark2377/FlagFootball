@@ -1,0 +1,64 @@
+body, html { margin: 0; padding: 0; font-family: sans-serif; overflow: hidden; height: 100%; background: #e2e8f0; }
+header { background: #1a202c; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+
+/* The App Container handles the responsive layout when Roster opens */
+#app-container { height: 100vh; display: flex; flex-direction: column; width: 100%; transition: width 0.3s ease-in-out; }
+#canvas-container { flex-grow: 1; background: #2f855a; position: relative; }
+body.roster-open #app-container { width: calc(100% - 300px); }
+
+/* Context Menu for Routes */
+.context-menu { display: none; position: absolute; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); padding: 10px; z-index: 100; grid-template-columns: repeat(3, 1fr); gap: 15px; pointer-events: auto; }
+.context-menu.active { display: grid; }
+.route-option { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 5px; border-radius: 6px; transition: background 0.2s; }
+.route-option:hover { background: #edf2f7; }
+.route-option svg { width: 40px; height: 40px; overflow: visible; }
+.route-label { font-size: 12px; font-weight: bold; margin-top: 5px; text-align: center; color: #2d3748; }
+
+/* Slide-out Panel Base */
+.slide-out { position: fixed; top: 0; right: -320px; width: 300px; height: 100vh; background: #f8fafc; box-shadow: -4px 0 15px rgba(0,0,0,0.2); transition: right 0.3s ease-in-out; z-index: 50; display: flex; flex-direction: column; }
+.slide-out.open { right: 0; }
+
+/* Roster Internal Styling */
+.roster-header { background: #2d3748; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+.roster-form { padding: 15px; background: #edf2f7; display: flex; gap: 5px; border-bottom: 1px solid #cbd5e0; }
+#roster-list { list-style-type: none; margin: 0; padding: 0; overflow-y: auto; }
+
+/* The Draggable Player Elements */
+.roster-item { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; background: white; cursor: grab; display: flex; align-items: center; user-select: none; }
+.roster-item:active { cursor: grabbing; background: #edf2f7; }
+.roster-item.on-field { background: #c6f6d5; border-left: 5px solid #38a169; } /* Highlight for active players */
+
+/* Settings Modal */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; }
+.modal.active { display: flex; }
+.modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; max-width: 400px; }
+.upload-btn { background: #4a5568; color: white; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 13.3px; }
+
+/* --- Header Component Styling --- */
+.app-header { background: #1a202c; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.header-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-grow: 1; justify-content: flex-end; }
+.control-group { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 6px; }
+.flex-grow { flex-grow: 1; min-width: 150px; }
+
+/* Colors & Text */
+.bg-blue { background: #2b6cb0; }
+.bg-light { background: #e2e8f0; }
+.bg-dark { background: #2d3748; }
+.text-white { font-size: 12px; font-weight: bold; color: white; }
+
+/* Button Styles */
+.btn-yellow { background: #ecc94b; color: #2d3748; font-weight: bold; }
+.btn-light { background: #e2e8f0; color: #2d3748; font-weight: bold; }
+.btn-blue { background: #3182ce; color: white; font-weight: bold; }
+.btn-green { background: #48bb78; color: white; font-weight: bold; }
+.btn-standard { background: white; color: #2d3748; font-weight: bold; }
+.dropdown-styled { padding: 5px; border-radius: 4px; border: 1px solid #cbd5e0; font-weight: bold; cursor: pointer; }
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 900px) {
+    /* On smaller screens, allow the controls to drop to the next line */
+    .app-header { flex-direction: column; align-items: stretch; }
+    .header-controls { justify-content: flex-start; }
+    .control-group { flex-wrap: wrap; }
+}
