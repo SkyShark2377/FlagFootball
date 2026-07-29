@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flag Football Playbook</title>
+    <link rel="stylesheet" href="css/style.css">
+	<link rel="manifest" href="manifest.json">
+    
+    <script src="./src/lib/konva.min.js"></script>
+    <script src="./src/lib/anime.min.js"></script>
+</head>
+<body>
+    <div id="app-container">
+        <header>
+            <h2 style="margin: 0;">Play Designer</h2>
+            <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1; justify-content: flex-end;">
+                
+                <div style="display: flex; align-items: center; gap: 5px; background: #2b6cb0; padding: 5px 10px; border-radius: 6px;">
+                    <button id="btn-telestrator" style="background: #ecc94b; color: #2d3748; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">🖍️ INK</button>
+                    <button id="btn-clear-ink" style="background: #e2e8f0; color: #2d3748; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">CLEAR</button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 5px; background: #2d3748; padding: 5px 10px; border-radius: 6px; flex-grow: 1; max-width: 300px;">
+                    <label for="timeline-slider" style="font-size: 12px; font-weight: bold; color: white;">Scrub:</label>
+                    <input type="range" id="timeline-slider" min="0" max="100" value="0" style="width: 100%;">
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 5px; background: #2d3748; padding: 5px 10px; border-radius: 6px;">
+                    <label for="speed-slider" style="font-size: 12px; font-weight: bold; color: white;">Speed:</label>
+                    <input type="range" id="speed-slider" min="0.25" max="2" step="0.25" value="1" style="width: 70px;">
+                    <button id="btn-play" style="background: #48bb78; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">PLAY</button>
+                    <button id="btn-reset" style="background: #e2e8f0; color: #2d3748; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">RESET</button>
+                </div>
+                
+                <button id="btn-roster">Roster</button>
+                <button id="btn-settings">Settings</button>
+				<select id="formation-selector" style="padding: 8px; border-radius: 4px; border: 1px solid #cbd5e0; font-weight: bold; background: white; cursor: pointer;">
+                    <option value="scrimmage">Line of Scrimmage</option>
+                    <option value="singleback">Singleback</option>
+                    <option value="spread">Spread (Shotgun)</option>
+                    <option value="tripsRight">Trips Right</option>
+                </select>
+				<div style="display: flex; align-items: center; gap: 5px; background: #e2e8f0; padding: 5px; border-radius: 6px;">
+                    <select id="playbook-selector" style="padding: 5px; border-radius: 4px; border: 1px solid #cbd5e0; font-weight: bold;">
+                        <option value="">-- Select Play --</option>
+                    </select>
+                    <button id="btn-save-play" style="background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">💾 SAVE</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-container"></div>
+        
+        <div id="route-menu" class="context-menu"></div>
+    </div>
+
+    <div id="roster-panel" class="slide-out">
+        <div class="roster-header">
+            <h3 style="margin: 0;">Team Roster</h3>
+            <button id="btn-close-roster" style="cursor: pointer; background: none; color: white; border: none; font-size: 16px;">X</button>
+        </div>
+        <div class="roster-form">
+            <input type="text" id="new-player-name" placeholder="Name" style="width: 60%;">
+            <input type="number" id="new-player-number" placeholder="#" style="width: 25%;">
+            <button id="btn-add-player" style="width: 15%;">+</button>
+        </div>
+        <ul id="roster-list"></ul>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h2>Data Management</h2>
+            <p>Backup or restore your entire team roster and playbook.</p>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button id="btn-export">Backup App Data (Download)</button>
+                <label for="file-import" class="upload-btn">Restore from Backup</label>
+                <input type="file" id="file-import" accept=".json" style="display: none;">
+            </div>
+            <button id="btn-close-settings" style="margin-top: 20px; padding: 5px 15px;">Close</button>
+        </div>
+    </div>
+
+    <script type="module" src="src/app.js"></script>
+	<script>
+        // Register the Service Worker for Offline PWA support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('ServiceWorker registered successfully');
+                })
+                .catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
