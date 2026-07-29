@@ -12,43 +12,51 @@
 </head>
 <body>
     <div id="app-container">
-        <header>
+        <header class="app-header">
             <h2 style="margin: 0;">Play Designer</h2>
-            <div style="display: flex; align-items: center; gap: 15px; flex-grow: 1; justify-content: flex-end;">
-                
-                <div style="display: flex; align-items: center; gap: 5px; background: #2b6cb0; padding: 5px 10px; border-radius: 6px;">
-                    <button id="btn-telestrator" style="background: #ecc94b; color: #2d3748; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">🖍️ INK</button>
-                    <button id="btn-clear-ink" style="background: #e2e8f0; color: #2d3748; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">CLEAR</button>
+            
+            <div class="header-controls">
+                <div class="control-group bg-blue">
+                    <button id="btn-telestrator" class="btn-yellow">🖍️ INK</button>
+                    <button id="btn-clear-ink" class="btn-light">CLEAR</button>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 5px; background: #2d3748; padding: 5px 10px; border-radius: 6px; flex-grow: 1; max-width: 300px;">
-                    <label for="timeline-slider" style="font-size: 12px; font-weight: bold; color: white;">Scrub:</label>
-                    <input type="range" id="timeline-slider" min="0" max="100" value="0" style="width: 100%;">
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 5px; background: #2d3748; padding: 5px 10px; border-radius: 6px;">
-                    <label for="speed-slider" style="font-size: 12px; font-weight: bold; color: white;">Speed:</label>
-                    <input type="range" id="speed-slider" min="0.25" max="2" step="0.25" value="1" style="width: 70px;">
-                    <button id="btn-play" style="background: #48bb78; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">PLAY</button>
-                    <button id="btn-reset" style="background: #e2e8f0; color: #2d3748; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">RESET</button>
-                </div>
-                
-                <button id="btn-roster">Roster</button>
-                <button id="btn-settings">Settings</button>
-				<select id="formation-selector" style="padding: 8px; border-radius: 4px; border: 1px solid #cbd5e0; font-weight: bold; background: white; cursor: pointer;">
-                    <option value="scrimmage">Line of Scrimmage</option>
-                    <option value="singleback">Singleback</option>
-                    <option value="spread">Spread (Shotgun)</option>
-                    <option value="tripsRight">Trips Right</option>
-                </select>
-				<div style="display: flex; align-items: center; gap: 5px; background: #e2e8f0; padding: 5px; border-radius: 6px;">
-                    <select id="playbook-selector" style="padding: 5px; border-radius: 4px; border: 1px solid #cbd5e0; font-weight: bold;">
+                <div class="control-group bg-light">
+                    <select id="playbook-selector" class="dropdown-styled">
                         <option value="">-- Select Play --</option>
                     </select>
-                    <button id="btn-save-play" style="background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">💾 SAVE</button>
+                    <button id="btn-save-play" class="btn-blue">💾 SAVE</button>
+                </div>
+
+                <div class="control-group bg-dark flex-grow">
+                    <label for="timeline-slider" class="text-white">Scrub:</label>
+                    <input type="range" id="timeline-slider" min="0" max="100" value="0">
+                </div>
+
+                <div class="control-group bg-dark">
+                    <label for="speed-slider" class="text-white">Speed:</label>
+                    <input type="range" id="speed-slider" min="0.25" max="2" step="0.25" value="1" style="width: 60px;">
+                    <button id="btn-play" class="btn-green">PLAY</button>
+                    <button id="btn-reset" class="btn-light">RESET</button>
+                </div>
+                
+                <div class="control-group">
+                    <select id="formation-selector" class="dropdown-styled">
+                        <option value="scrimmage">Line of Scrimmage</option>
+                        <option value="singleback">Singleback</option>
+                        <option value="spread">Spread (Shotgun)</option>
+                        <option value="tripsRight">Trips Right</option>
+                    </select>
+                    <button id="btn-roster" class="btn-standard">Roster</button>
+                    <button id="btn-settings" class="btn-standard">Settings</button>
                 </div>
             </div>
         </header>
+        
+        <div id="portrait-warning">
+            <h2>🏈 Please Rotate Your Device</h2>
+            <p>The Play Designer requires landscape mode to draw routes properly.</p>
+        </div>
 
         <div id="canvas-container"></div>
         
