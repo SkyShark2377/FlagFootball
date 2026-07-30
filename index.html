@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flag Football Playbook</title>
     <link rel="stylesheet" href="css/style.css">
-	<link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json">
     
     <script src="./src/lib/konva.min.js"></script>
     <script src="./src/lib/anime.min.js"></script>
@@ -16,6 +16,7 @@
             <h2 style="margin: 0;">Play Designer</h2>
             
             <div class="header-controls">
+                
                 <div class="control-group bg-blue">
                     <button id="btn-telestrator" class="btn-yellow">🖍️ INK</button>
                     <button id="btn-clear-ink" class="btn-light">CLEAR</button>
@@ -25,7 +26,8 @@
                     <select id="playbook-selector" class="dropdown-styled">
                         <option value="">-- Select Play --</option>
                     </select>
-                    <button id="btn-save-play" class="btn-blue">💾 SAVE</button>
+                    <button id="btn-save-play" class="btn-blue">💾 SAVE PLAY</button>
+                    <button id="btn-clear-play" class="btn-light" style="color: #c53030;">CLEAR</button>
                 </div>
 
                 <div class="control-group bg-dark flex-grow">
@@ -40,16 +42,17 @@
                     <button id="btn-reset" class="btn-light">RESET</button>
                 </div>
                 
-                <div class="control-group">
+                <div class="control-group bg-light">
                     <select id="formation-selector" class="dropdown-styled">
-                        <option value="scrimmage">Line of Scrimmage</option>
-                        <option value="singleback">Singleback</option>
-                        <option value="spread">Spread (Shotgun)</option>
-                        <option value="tripsRight">Trips Right</option>
-                    </select>
+                        </select>
+                    <button id="btn-save-formation" class="btn-blue">💾 SAVE FORM</button>
+                </div>
+
+                <div class="control-group">
                     <button id="btn-roster" class="btn-standard">Roster</button>
                     <button id="btn-settings" class="btn-standard">Settings</button>
                 </div>
+
             </div>
         </header>
 
@@ -85,7 +88,7 @@
     </div>
 
     <script type="module" src="src/app.js"></script>
-	<script>
+    <script>
         // Register the Service Worker for Offline PWA support
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

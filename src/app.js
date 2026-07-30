@@ -1,7 +1,10 @@
 // src/app.js
 
 import { getTeam, addPlayer, removePlayer } from './roster.js';
-import { exportAppState, importAppState } from './storage.js';
+import { exportAppState, importAppState, saveCustomFormation } from './storage.js';
+import { getAllFormationsList } from './formations.js';
+import { getAllRoutes } from './routes.js';
+import { getPlaybook, savePlayToPlaybook } from './playbook.js';
 import { 
     initField, 
     resizeField, 
@@ -16,11 +19,15 @@ import {
     toggleTelestrator, 
     clearTelestrator, 
     enableCustomDrawing, 
-    changeFormation 
+    changeFormation,
+    loadPlayToField,
+    clearPlayRoutes,
+    getCurrentPlayerCoordinates, 
+    getCurrentPlayAssignments,
+    addBallTransfer,
+    getActiveBallTransfers
 } from './field.js';
-import { getAllRoutes } from './routes.js';
-import { loadPlayToField } from './field.js';
-import { getPlaybook, savePlayToPlaybook } from './playbook.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     
     // --- DOM Elements ---
@@ -84,38 +91,119 @@ document.addEventListener('DOMContentLoaded', () => {
         timelineSlider.value = 0; 
     });
 
-	// --- Playbook Logic ---
+    // --- Formation & Playbook UI Rendering ---
+    const formationSelector = document.getElementById('formation-selector');
     const playbookSelector = document.getElementById('playbook-selector');
-    
-    function renderPlaybook() {
-        playbookSelector.innerHTML = '<option value="">-- Select Play --</option>';
-        const playbook = getPlaybook();
+
+    function renderFormations() {
+        if (!formationSelector) return;
+        const currentVal = formationSelector.value;
+        formationSelector.innerHTML = '';
         
+        const formations = getAllFormationsList();
+        formations.forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.id;
+            opt.innerText = f.name;
+            formationSelector.appendChild(opt);
+        });
+        if (currentVal) formationSelector.value = currentVal;
+    }
+
+    function renderPlaybook() {
+        if (!playbookSelector) return;
+        const currentVal = playbookSelector.value;
+        playbookSelector.innerHTML = '<option value="">-- Select Play --</option>';
+        
+        const playbook = getPlaybook();
         playbook.forEach(play => {
             const opt = document.createElement('option');
             opt.value = play.id;
             opt.innerText = play.name;
             playbookSelector.appendChild(opt);
         });
+        
+        // Force browser redraw of the select element to fix scrollbar bug
+        playbookSelector.style.display = 'none';
+        playbookSelector.offsetHeight; 
+        playbookSelector.style.display = '';
+        
+        if (currentVal) playbookSelector.value = currentVal;
     }
 
-    playbookSelector.addEventListener('change', (e) => {
-        const playId = e.target.value;
-        if (!playId) return;
-        
-        const play = getPlaybook().find(p => p.id === playId);
-        if (play) {
-            loadPlayToField(play);
-        }
-    });
+    // --- Formation Selector Change Listener ---
+    if (formationSelector) {
+        formationSelector.addEventListener('change', (e) => {
+            changeFormation(e.target.value);
+        });
+    }
 
-    // Save Play Placeholder
-    document.getElementById('btn-save-play').addEventListener('click', () => {
-        alert("The visual route saving logic will be mapped to this button next!");
-    });
-    
-    // Call this at the bottom of your file next to renderRoster()
-    renderPlaybook();
+    // --- Playbook Selector Change Listener ---
+    if (playbookSelector) {
+        playbookSelector.addEventListener('change', (e) => {
+            const playId = e.target.value;
+            if (!playId) return;
+            
+            const play = getPlaybook().find(p => p.id === playId);
+            if (play) {
+                if (formationSelector) {
+                    formationSelector.value = play.formation;
+                }
+                loadPlayToField(play);
+            }
+        });
+    }
+
+    // --- Save Custom Formation Button ---
+    const btnSaveFormation = document.getElementById('btn-save-formation');
+    if (btnSaveFormation) {
+        btnSaveFormation.addEventListener('click', () => {
+            const name = prompt("Enter a name for this new formation (e.g., 'Goal Line'):");
+            if (!name) return;
+            
+            const id = 'form_' + Date.now();
+            const coords = getCurrentPlayerCoordinates();
+            
+            saveCustomFormation(id, name, coords);
+            renderFormations();
+            if (formationSelector) formationSelector.value = id;
+            alert(`Formation "${name}" saved successfully!`);
+        });
+    }
+
+    // --- Save Custom Play Button ---
+    const btnSavePlay = document.getElementById('btn-save-play');
+    if (btnSavePlay) {
+        btnSavePlay.addEventListener('click', () => {
+            const name = prompt("Enter a name for this play (e.g., 'Center Leak'):");
+            if (!name) return;
+            
+            const formationId = formationSelector ? formationSelector.value : 'singleback';
+            const assignments = getCurrentPlayAssignments();
+            
+            const newPlay = {
+                id: 'play_' + Date.now(),
+                name: name,
+                category: 'offense_pass',
+                formation: formationId,
+                assignments: assignments,
+                ballTransfers: getActiveBallTransfers() 
+            };
+            
+            savePlayToPlaybook(newPlay);
+            renderPlaybook();
+            if (playbookSelector) playbookSelector.value = newPlay.id;
+            alert(`Play "${name}" saved to your playbook!`);
+        });
+    }
+
+    // --- Wire Clear Play Button ---
+    const btnClearPlay = document.getElementById('btn-clear-play');
+    if (btnClearPlay) {
+        btnClearPlay.addEventListener('click', () => {
+            clearPlayRoutes();
+        });
+    }
 
     // --- UI Toggles ---
     btnRoster.addEventListener('click', () => {
@@ -126,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnCloseRoster.addEventListener('click', () => {
         rosterPanel.classList.remove('open');
-		document.body.classList.remove('roster-open');
+        document.body.classList.remove('roster-open');
         setTimeout(resizeField, 300);
     });
 
@@ -137,14 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCloseSettings.addEventListener('click', () => {
         settingsModal.classList.remove('active');
     });
-
-	// --- Formation Selector ---
-    const formationSelector = document.getElementById('formation-selector');
-    if (formationSelector) {
-        formationSelector.addEventListener('change', (e) => {
-            changeFormation(e.target.value);
-        });
-    }
 
     // --- Drag and Drop Logic ---
     const canvasContainer = document.getElementById('canvas-container');
@@ -218,7 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </svg>
             <span class="route-label">Delay</span>
         `;
-        
         delayOpt.addEventListener('click', () => {
             const delaySec = prompt("Wait how many seconds before running? (e.g., 1.5)", "0");
             if (delaySec !== null) {
@@ -229,7 +308,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             routeMenu.classList.remove('active');
         });
-        
         routeMenu.appendChild(delayOpt);
 
         // Add the "Custom Draw" option
@@ -247,6 +325,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         routeMenu.appendChild(customOpt);
 
+        // Add the "Pass/Handoff" option
+        const passOpt = document.createElement('div');
+        passOpt.className = 'route-option';
+        passOpt.innerHTML = `
+            <svg viewBox="0 0 40 40" stroke="#8B4513" stroke-width="4" fill="transparent" stroke-linecap="round">
+                <ellipse cx="20" cy="20" rx="8" ry="12" fill="#8B4513" stroke="white" stroke-width="2"></ellipse>
+            </svg>
+            <span class="route-label">Pass/Hand</span>
+        `;
+        passOpt.addEventListener('click', () => {
+            const targetNode = prompt("Pass to which player position? (0-6)\n0:Center, 1:QB, 2:RB, etc.", "2");
+            if (targetNode !== null) {
+                const timeSec = prompt("Wait how many seconds after the snap before passing/handing off? (e.g., 1.5)", "1.5");
+                if (timeSec !== null) {
+                    const fromIndex = parseInt(activePlayerNodeId.split('_')[2]);
+                    const toIndex = parseInt(targetNode);
+                    const timeMs = parseFloat(timeSec) * 1000;
+                    
+                    if (!isNaN(toIndex) && !isNaN(timeMs)) {
+                        addBallTransfer(fromIndex, toIndex, timeMs);
+                        alert(`Ball sequence recorded!`);
+                    }
+                }
+            }
+            routeMenu.classList.remove('active');
+        });
+        routeMenu.appendChild(passOpt);
+
         routeMenu.style.left = (x + 20) + 'px';
         routeMenu.style.top = (y - 180) + 'px';
         routeMenu.classList.add('active');
@@ -257,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
             routeMenu.classList.remove('active');
         }
     });
-
     document.addEventListener('touchstart', (e) => {
         if (!routeMenu.contains(e.target) && routeMenu.classList.contains('active')) {
             routeMenu.classList.remove('active');
@@ -331,5 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initialization ---
     initField('canvas-container');
+    renderFormations();
+    renderPlaybook();
     renderRoster();
 });

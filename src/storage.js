@@ -73,3 +73,20 @@ export function importAppState(file, callback) {
     
     reader.readAsText(file);
 }
+
+export function getCustomFormations() {
+    const data = JSON.parse(localStorage.getItem('flag_football_data')) || {};
+    return data.formations || {};
+}
+
+export function saveCustomFormation(formationId, formationName, coordinatesArray) {
+    const data = JSON.parse(localStorage.getItem('flag_football_data')) || {};
+    if (!data.formations) data.formations = {};
+    
+    data.formations[formationId] = {
+        name: formationName,
+        coordinates: coordinatesArray // Stores the [{x, y}, ...] for all 7 players
+    };
+    
+    localStorage.setItem('flag_football_data', JSON.stringify(data));
+}

@@ -1,11 +1,11 @@
 // src/field.js
 
 import { getFormationCoordinates } from './formations.js';
-import { getRouteData } from './routes.js'; // default routes
+import { getRouteData } from './routes.js'; 
 
 let stage, backgroundLayer, formationLayer, routeLayer, telestratorLayer;
-let football; // NEW: The Ball
-let activeBallTransfers = []; // NEW: Track the ball sequence
+let football; 
+let activeBallTransfers = []; 
 let longPressCallback = null;
 
 // Drawing State Variables
@@ -20,6 +20,7 @@ let currentTelestratorLine = null;
 
 // Animation Timeline State
 let currentTimeline = null; 
+let isAnimatingPlay = false; // FLAG: Prevents the infinite player runaway loop
 
 export function setLongPressHandler(callback) {
     longPressCallback = callback;
@@ -44,7 +45,7 @@ export function initField(containerId) {
     stage.add(formationLayer);
     stage.add(telestratorLayer); 
 
-	// Create the Football
+    // Create the Football
     football = new Konva.Ellipse({
         radiusX: 8,
         radiusY: 12,
@@ -200,13 +201,15 @@ function drawDefaultFormation(width, height) {
             draggable: true
         });
 
-        // The physical shape (Upgraded size for mobile fingers)
+        let defaultFill = '#e2e8f0';
+        if (i === 0) defaultFill = '#68d391'; // Center
+        if (i === 1) defaultFill = '#f6e05e'; // QB
+
         const circle = new Konva.Circle({
-            x: 0, y: 0, radius: 28, fill: '#e2e8f0', stroke: '#2d3748', strokeWidth: 3,
+            x: 0, y: 0, radius: 28, fill: defaultFill, stroke: '#2d3748', strokeWidth: 3,
             name: 'playerShape'
         });
 
-        // The text label for the Jersey Number
         const label = new Konva.Text({
             x: -28, y: -10, width: 56, align: 'center',
             text: '', fontSize: 18, fill: '#2d3748', fontStyle: 'bold',
@@ -219,8 +222,6 @@ function drawDefaultFormation(width, height) {
         let pressTimer;
         positionNode.on('mousedown touchstart', (e) => {
             if (isTelestratorMode || isDrawingRoute) return; 
-            
-            // Stop the browser from scrolling or opening context menus on long-press
             if (e.evt) e.evt.preventDefault();
 
             pressTimer = setTimeout(() => {
@@ -229,7 +230,7 @@ function drawDefaultFormation(width, height) {
                     const pointerPos = stage.getPointerPosition();
                     longPressCallback(positionNode.id(), pointerPos.x + containerPos.left, pointerPos.y + containerPos.top);
                 }
-            }, 500); // 500ms hold triggers the route menu
+            }, 500); 
         });
 
         positionNode.on('mouseup touchend mousemove touchmove', () => {
@@ -237,6 +238,7 @@ function drawDefaultFormation(width, height) {
         });
         formationLayer.add(positionNode);
     }
+    resetPlay();
 }
 
 export function handlePlayerDrop(dropX, dropY, playerInfo, onHighlightUpdate) {
@@ -270,7 +272,15 @@ export function handlePlayerDrop(dropX, dropY, playerInfo, onHighlightUpdate) {
         const circle = droppedNode.findOne('.playerShape');
         const label = droppedNode.findOne('.playerLabel');
         
-        if (circle) circle.fill('#bee3f8'); 
+        const nodeId = droppedNode.id();
+        if (nodeId === 'player_node_0') {
+            circle.fill('#68d391'); 
+        } else if (nodeId === 'player_node_1') {
+            circle.fill('#f6e05e'); 
+        } else {
+            circle.fill('#bee3f8'); 
+        }
+
         if (label) label.text(playerInfo.number); 
 
         formationLayer.batchDraw();
@@ -305,9 +315,11 @@ export function assignRouteToPlayer(nodeId, routeData, routeConfig = { duration:
 
     player.routeLine = path; 
     player.routeConfig = routeConfig; 
+    player.routeData = routeData; 
     routeLayer.add(path);
 
-    player.on('dragmove', () => {
+    player.on('dragmove xChange yChange', () => {
+        if (isAnimatingPlay) return; // FIX: Prevents infinite player runaway loop
         path.x(player.x());
         path.y(player.y());
     });
@@ -325,7 +337,6 @@ export function clearTelestrator() {
     telestratorLayer.batchDraw();
 }
 
-// --- Trigger Custom SVG Drawing Mode ---
 export function enableCustomDrawing(nodeId) {
     activeDrawingNode = formationLayer.findOne('#' + nodeId);
     if (!activeDrawingNode) return;
@@ -343,6 +354,8 @@ export function runPlayAnimation(speedMultiplier, onUpdate) {
         resetPlay();
     }
 
+    isAnimatingPlay = true; // Set Flag
+
     currentTimeline = anime.timeline({
         easing: 'linear',
         autoplay: true,
@@ -358,7 +371,6 @@ export function runPlayAnimation(speedMultiplier, onUpdate) {
                 const endTime = transfer.time + transfer.flightDuration;
                 
                 if (currentTime >= transfer.time && currentTime <= endTime) {
-                    // Ball is in the air!
                     const progress = (currentTime - transfer.time) / transfer.flightDuration;
                     const pFrom = formationLayer.findOne('#player_node_' + transfer.fromIndex);
                     const pTo = formationLayer.findOne('#player_node_' + transfer.toIndex);
@@ -366,23 +378,24 @@ export function runPlayAnimation(speedMultiplier, onUpdate) {
                     if (pFrom && pTo) {
                         football.x(pFrom.x() + (pTo.x() - pFrom.x()) * progress);
                         football.y(pFrom.y() + (pTo.y() - pFrom.y()) * progress);
-                        currentHolderIndex = -1; // In flight
+                        currentHolderIndex = -1; 
                     }
                     break;
                 } else if (currentTime > endTime) {
-                    currentHolderIndex = transfer.toIndex; // Landed in the receiver's hands
+                    currentHolderIndex = transfer.toIndex; 
                 }
             }
             
-            // If the ball is being held by a player, glue it to their coordinates
             if (currentHolderIndex !== -1) {
                 const holder = formationLayer.findOne('#player_node_' + currentHolderIndex);
                 if (holder) {
                     football.x(holder.x());
-                    // Offset by -15 to stick it to the front of the player sprite
-                    football.y(holder.y() - 15); 
+                    football.y(holder.y() - 30); 
                 }
             }
+        },
+        complete: function() {
+            isAnimatingPlay = false; // Unset Flag when animation naturally finishes
         }
     });
 
@@ -392,7 +405,8 @@ export function runPlayAnimation(speedMultiplier, onUpdate) {
         if (!player.routeLine) return; 
         hasAnimations = true;
 
-        const pathLength = player.routeLine.getLength();
+        // FIX: Utilize Konva's built-in math to measure the line natively
+        const pathLength = player.routeLine.getLength(); 
         const baseDuration = player.routeConfig ? player.routeConfig.duration : 2000;
         const baseDelay = player.routeConfig ? player.routeConfig.delay : 0;
 
@@ -411,7 +425,10 @@ export function runPlayAnimation(speedMultiplier, onUpdate) {
         }, 0); 
     });
 
-    if (!hasAnimations) alert("Assign routes to players before hitting PLAY!");
+    if (!hasAnimations) {
+        alert("Assign routes to players before hitting PLAY!");
+        isAnimatingPlay = false;
+    }
 }
 
 export function seekTimeline(percentage) {
@@ -431,67 +448,84 @@ export function setPlayerDelay(nodeId, delayMs) {
 }
 
 // --- FORMATIONS ENGINE ---
-export function changeFormation(formationType) {
+export function changeFormation(formationType, onComplete) {
     const width = stage.width();
     const height = stage.height();
-    
-    // Grab the coordinates from our new module
     const targetFormation = getFormationCoordinates(formationType, width, height);
+
+    let activeTweens = 0;
 
     for (let i = 0; i < 7; i++) {
         const player = formationLayer.findOne('#player_node_' + i);
         if (player) {
-            // Smoothly slide the player to the new position
+            activeTweens++;
             player.to({
                 x: targetFormation[i].x,
                 y: targetFormation[i].y,
                 duration: 0.5,
-                easing: Konva.Easings.EaseInOut
+                easing: Konva.Easings.EaseInOut,
+                onUpdate: () => {
+                    if (i === 0 && football) {
+                        football.x(player.x());
+                        football.y(player.y() - 30);
+                        formationLayer.batchDraw();
+                    }
+                },
+                onFinish: () => {
+                    activeTweens--;
+                    if (activeTweens === 0 && onComplete) {
+                        onComplete();
+                    }
+                }
             });
         }
     }
 }
 
 export function loadPlayToField(playObject) {
-    // 1. Set the formation
-    changeFormation(playObject.formation);
-    
-    // 2. Clear old routes
-    const players = formationLayer.find('Group');
-    players.forEach(p => { 
-        if (p.routeLine) {
-            p.routeLine.destroy(); 
-            p.routeLine = null;
-        }
-    });
-    
-    // 3. Assign new routes
-    if (playObject.assignments) {
-        for (const [playerIndex, assignment] of Object.entries(playObject.assignments)) {
-            const routeData = getRouteData(assignment.routeId);
-            if (routeData) {
-                assignRouteToPlayer('player_node_' + playerIndex, routeData, { duration: 2000, delay: assignment.delay });
+    clearPlayRoutes();
+
+    changeFormation(playObject.formation, () => {
+        if (playObject.assignments) {
+            for (const [playerIndex, assignment] of Object.entries(playObject.assignments)) {
+                const routeData = assignment.routeData || getRouteData(assignment.routeId);
+                if (routeData) {
+                    const nodeId = 'player_node_' + playerIndex;
+                    assignRouteToPlayer(nodeId, routeData, { duration: assignment.duration || 2000, delay: assignment.delay });
+                    
+                    const playerNode = formationLayer.findOne('#' + nodeId);
+                    if (playerNode && playerNode.routeLine) {
+                        playerNode.routeLine.x(playerNode.x());
+                        playerNode.routeLine.y(playerNode.y());
+                    }
+                }
             }
         }
-    }
-    
-    // FIX: Force routes to align with the newly shifted formation immediately
-    players.forEach(p => {
-        if (p.routeLine) {
-            p.routeLine.x(p.x());
-            p.routeLine.y(p.y());
-        }
+        routeLayer.batchDraw();
     });
-    routeLayer.batchDraw();
 
-    // 4. Load the ball transfers
-    activeBallTransfers = playObject.ballTransfers || [];
+    activeBallTransfers = playObject.ballTransfers || [{ time: 0, fromIndex: 0, toIndex: 1, flightDuration: 100 }];
     resetPlay();
 }
 
-// Update your resetPlay function to snap the ball to the Center
+export function clearPlayRoutes() {
+    const players = formationLayer.find('Group');
+    players.forEach(p => {
+        if (p.routeLine) {
+            p.routeLine.destroy();
+            p.routeLine = null;
+            p.routeData = null; 
+        }
+    });
+    routeLayer.batchDraw();
+    
+    activeBallTransfers = [{ time: 0, fromIndex: 0, toIndex: 1, flightDuration: 100 }];
+    resetPlay();
+}
+
 export function resetPlay() {
     if (currentTimeline) currentTimeline.pause(); 
+    isAnimatingPlay = false; // Reset the runaway flag just in case play was aborted
 
     const players = formationLayer.find('Group');
     players.forEach(player => {
@@ -501,13 +535,51 @@ export function resetPlay() {
         }
     });
     
-    // Snap ball to the Center (Node 0)
     const centerNode = formationLayer.findOne('#player_node_0');
-    if (centerNode) {
+    if (centerNode && football) {
         football.x(centerNode.x());
-        // Offset by -15 so the ball rests at the "front" edge of the Center
-        football.y(centerNode.y() - 15); 
+        football.y(centerNode.y() - 30); 
     }
     
     formationLayer.batchDraw();
+}
+
+// --- EXPORT CURRENT FIELD STATE FOR SAVING ---
+
+export function getCurrentPlayerCoordinates() {
+    const coordinates = [];
+    for (let i = 0; i < 7; i++) {
+        const player = formationLayer.findOne('#player_node_' + i);
+        if (player) {
+            coordinates.push({ x: player.x(), y: player.y() });
+        }
+    }
+    return coordinates;
+}
+
+export function addBallTransfer(fromIndex, toIndex, timeMs, flightDuration = 400) {
+    activeBallTransfers.push({ time: timeMs, fromIndex: fromIndex, toIndex: toIndex, flightDuration: flightDuration });
+    activeBallTransfers.sort((a, b) => a.time - b.time); 
+}
+
+export function getActiveBallTransfers() {
+    if (activeBallTransfers.length === 0) {
+        return [{ time: 0, fromIndex: 0, toIndex: 1, flightDuration: 100 }];
+    }
+    return activeBallTransfers;
+}
+
+export function getCurrentPlayAssignments() {
+    const assignments = {};
+    for (let i = 0; i < 7; i++) {
+        const player = formationLayer.findOne('#player_node_' + i);
+        if (player && player.routeData) { 
+            assignments[i] = {
+                routeData: player.routeData,
+                delay: player.routeConfig ? player.routeConfig.delay : 0,
+                duration: player.routeConfig ? player.routeConfig.duration : 2000
+            };
+        }
+    }
+    return assignments;
 }

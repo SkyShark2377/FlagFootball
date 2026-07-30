@@ -47,13 +47,15 @@ export const DEFAULT_PLAYS = [
 ];
 
 export function getPlaybook() {
-    const stored = localStorage.getItem('flag_football_playbook');
-    if (stored) return JSON.parse(stored);
-    return DEFAULT_PLAYS;
+    const data = JSON.parse(localStorage.getItem('flag_football_data')) || {};
+    const customPlays = data.plays || [];
+    return [...DEFAULT_PLAYS, ...customPlays];
 }
 
 export function savePlayToPlaybook(playObject) {
-    const playbook = getPlaybook();
-    playbook.push(playObject);
-    localStorage.setItem('flag_football_playbook', JSON.stringify(playbook));
+    const data = JSON.parse(localStorage.getItem('flag_football_data')) || {};
+    if (!data.plays) data.plays = [];
+    
+    data.plays.push(playObject);
+    localStorage.setItem('flag_football_data', JSON.stringify(data));
 }

@@ -1,14 +1,15 @@
 // src/formations.js
+import { getCustomFormations } from './storage.js';
 
 export function getFormationCoordinates(formationType, width, height) {
-    const totalVisibleYards = 25;
+    const totalVisibleYards = 25; 
     const yardHeight = height / totalVisibleYards;
-    const losY = height - (10 * yardHeight); // Line of Scrimmage
+    const losY = height - (10 * yardHeight); 
     const centerX = width / 2;
     const padding = width * 0.1;
     const fieldWidth = width - (padding * 2);
 
-    const formations = {
+    const defaultFormations = {
         scrimmage: [
             { x: (width * 0.25) + (0 * (width * 0.5 / 6)), y: losY },
             { x: (width * 0.25) + (1 * (width * 0.5 / 6)), y: losY },
@@ -47,5 +48,29 @@ export function getFormationCoordinates(formationType, width, height) {
         ]
     };
 
-    return formations[formationType] || formations.scrimmage;
+    // Merge built-in formations with any custom saved ones from storage
+    const custom = getCustomFormations();
+    const allFormations = { ...defaultFormations };
+    
+    for (const [id, formObj] of Object.entries(custom)) {
+        allFormations[id] = formObj.coordinates;
+    }
+
+    return allFormations[formationType] || defaultFormations.scrimmage;
+}
+
+export function getAllFormationsList() {
+    const custom = getCustomFormations();
+    const list = [
+        { id: 'scrimmage', name: 'Line of Scrimmage' },
+        { id: 'singleback', name: 'Singleback' },
+        { id: 'spread', name: 'Spread (Shotgun)' },
+        { id: 'tripsRight', name: 'Trips Right' }
+    ];
+
+    for (const [id, formObj] of Object.entries(custom)) {
+        list.push({ id: id, name: formObj.name });
+    }
+
+    return list;
 }
