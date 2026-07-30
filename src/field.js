@@ -188,7 +188,7 @@ function drawGrid(width, height) {
 function drawDefaultFormation(width, height) {
     const totalVisibleYards = 25; 
     const yardHeight = height / totalVisibleYards;
-    const losY = height - (5 * yardHeight); 
+    const losY = height - (10 * yardHeight); 
     
     for (let i = 0; i < 7; i++) {
         const nodeX = (width * 0.25) + (i * (width * 0.5 / 6)); 

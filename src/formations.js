@@ -3,7 +3,7 @@
 export function getFormationCoordinates(formationType, width, height) {
     const totalVisibleYards = 25;
     const yardHeight = height / totalVisibleYards;
-    const losY = height - (5 * yardHeight); // Line of Scrimmage
+    const losY = height - (10 * yardHeight); // Line of Scrimmage
     const centerX = width / 2;
     const padding = width * 0.1;
     const fieldWidth = width - (padding * 2);
