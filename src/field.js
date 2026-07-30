@@ -200,14 +200,16 @@ function drawDefaultFormation(width, height) {
             draggable: true
         });
 
+        // The physical shape (Upgraded size for mobile fingers)
         const circle = new Konva.Circle({
-            x: 0, y: 0, radius: 15, fill: '#e2e8f0', stroke: '#2d3748', strokeWidth: 2,
+            x: 0, y: 0, radius: 28, fill: '#e2e8f0', stroke: '#2d3748', strokeWidth: 3,
             name: 'playerShape'
         });
 
+        // The text label for the Jersey Number
         const label = new Konva.Text({
-            x: -15, y: -6, width: 30, align: 'center',
-            text: '', fontSize: 14, fill: '#2d3748', fontStyle: 'bold',
+            x: -28, y: -10, width: 56, align: 'center',
+            text: '', fontSize: 18, fill: '#2d3748', fontStyle: 'bold',
             name: 'playerLabel'
         });
 
@@ -217,6 +219,9 @@ function drawDefaultFormation(width, height) {
         let pressTimer;
         positionNode.on('mousedown touchstart', (e) => {
             if (isTelestratorMode || isDrawingRoute) return; 
+            
+            // Stop the browser from scrolling or opening context menus on long-press
+            if (e.evt) e.evt.preventDefault();
 
             pressTimer = setTimeout(() => {
                 if (longPressCallback) {
@@ -224,13 +229,12 @@ function drawDefaultFormation(width, height) {
                     const pointerPos = stage.getPointerPosition();
                     longPressCallback(positionNode.id(), pointerPos.x + containerPos.left, pointerPos.y + containerPos.top);
                 }
-            }, 500);
+            }, 500); // 500ms hold triggers the route menu
         });
 
         positionNode.on('mouseup touchend mousemove touchmove', () => {
             clearTimeout(pressTimer);
         });
-
         formationLayer.add(positionNode);
     }
 }
@@ -244,7 +248,7 @@ export function handlePlayerDrop(dropX, dropY, playerInfo, onHighlightUpdate) {
         const dy = node.y() - dropY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance < 25) {
+        if (distance < 45) {
             droppedNode = node;
             break;
         }
@@ -454,7 +458,12 @@ export function loadPlayToField(playObject) {
     
     // 2. Clear old routes
     const players = formationLayer.find('Group');
-    players.forEach(p => { if (p.routeLine) p.routeLine.destroy(); p.routeLine = null; });
+    players.forEach(p => { 
+        if (p.routeLine) {
+            p.routeLine.destroy(); 
+            p.routeLine = null;
+        }
+    });
     
     // 3. Assign new routes
     if (playObject.assignments) {
@@ -466,6 +475,15 @@ export function loadPlayToField(playObject) {
         }
     }
     
+    // FIX: Force routes to align with the newly shifted formation immediately
+    players.forEach(p => {
+        if (p.routeLine) {
+            p.routeLine.x(p.x());
+            p.routeLine.y(p.y());
+        }
+    });
+    routeLayer.batchDraw();
+
     // 4. Load the ball transfers
     activeBallTransfers = playObject.ballTransfers || [];
     resetPlay();
