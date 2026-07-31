@@ -6,7 +6,7 @@ import { getRouteData } from './routes.js';
 let stage, backgroundLayer, formationLayer, routeLayer, telestratorLayer;
 let football; 
 let activeBallTransfers = []; 
-let longPressCallback = null;
+let doubleTapCallback = null;
 
 // Drawing State Variables
 let isDrawingRoute = false;
@@ -22,8 +22,8 @@ let currentTelestratorLine = null;
 let currentTimeline = null; 
 let isAnimatingPlay = false; // FLAG: Prevents the infinite player runaway loop
 
-export function setLongPressHandler(callback) {
-    longPressCallback = callback;
+export function setDoubleTapHandler(callback) {
+    doubleTapCallback = callback;
 }
 
 export function initField(containerId) {
@@ -219,22 +219,18 @@ function drawDefaultFormation(width, height) {
         positionNode.add(circle);
         positionNode.add(label);
 
-        let pressTimer;
-        positionNode.on('mousedown touchstart', (e) => {
+        // Double Tap / Double Click to open the Route Menu
+        positionNode.on('dblclick dbltap', (e) => {
             if (isTelestratorMode || isDrawingRoute) return; 
+            
+            // Stop the browser from zooming or opening context menus
             if (e.evt) e.evt.preventDefault();
 
-            pressTimer = setTimeout(() => {
-                if (longPressCallback) {
-                    const containerPos = stage.container().getBoundingClientRect();
-                    const pointerPos = stage.getPointerPosition();
-                    longPressCallback(positionNode.id(), pointerPos.x + containerPos.left, pointerPos.y + containerPos.top);
-                }
-            }, 500); 
-        });
-
-        positionNode.on('mouseup touchend mousemove touchmove', () => {
-            clearTimeout(pressTimer);
+            if (doubleTapCallback) {
+                const containerPos = stage.container().getBoundingClientRect();
+                const pointerPos = stage.getPointerPosition();
+                doubleTapCallback(positionNode.id(), pointerPos.x + containerPos.left, pointerPos.y + containerPos.top);
+            }
         });
         formationLayer.add(positionNode);
     }

@@ -9,7 +9,7 @@ import {
     initField, 
     resizeField, 
     runPlayAnimation, 
-    setLongPressHandler, 
+    setDoubleTapHandler, 
     assignRouteToPlayer, 
     handlePlayerDrop, 
     getAssignedPlayerIds, 
@@ -69,27 +69,76 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTelestrator();
     });
 
-    // --- Animation Playback Logic ---
+    // --- Animation Playback & Custom Timeline Logic ---
     const btnPlay = document.getElementById('btn-play');
     const btnReset = document.getElementById('btn-reset'); 
     const speedSlider = document.getElementById('speed-slider');
-    const timelineSlider = document.getElementById('timeline-slider');
+    
+    // New Custom Timeline Elements
+    const customTimeline = document.getElementById('custom-timeline');
+    const timelineProgress = document.getElementById('timeline-progress');
+    const timelineHandle = document.getElementById('timeline-handle');
+    let isScrubbing = false;
 
-    btnPlay.addEventListener('click', () => {
-        const speed = parseFloat(speedSlider.value);
-        runPlayAnimation(speed, (progress) => {
-            timelineSlider.value = progress;
+    // Helper to visually fill the green bar and slide the white dot
+    function updateTimelineUI(percentage) {
+        if(timelineProgress) timelineProgress.style.width = percentage + '%';
+        if(timelineHandle) timelineHandle.style.left = percentage + '%';
+    }
+
+    if (btnPlay) {
+        btnPlay.addEventListener('click', () => {
+            const speed = parseFloat(speedSlider ? speedSlider.value : 1);
+            runPlayAnimation(speed, (progress) => {
+                updateTimelineUI(progress);
+            });
         });
-    });
+    }
 
-    timelineSlider.addEventListener('input', (e) => {
-        seekTimeline(e.target.value);
-    });
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            resetPlay();
+            updateTimelineUI(0); 
+        });
+    }
 
-    btnReset.addEventListener('click', () => {
-        resetPlay();
-        timelineSlider.value = 0; 
-    });
+    // --- Custom Scrubber Drag Logic ---
+    function handleScrub(e) {
+        if (!isScrubbing || !customTimeline) return;
+        const rect = customTimeline.getBoundingClientRect();
+        
+        // Handle both mouse and touch coordinates seamlessly
+        let clientX = e.clientX;
+        if (clientX === undefined && e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+        }
+        if (clientX === undefined) return;
+
+        // Calculate where the finger/mouse is relative to the track's width
+        let x = clientX - rect.left;
+        let percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+        updateTimelineUI(percentage);
+        seekTimeline(percentage);
+    }
+
+    if (customTimeline) {
+        // Start scrubbing on click/touch
+        customTimeline.addEventListener('mousedown', (e) => {
+            isScrubbing = true;
+            handleScrub(e);
+        });
+        customTimeline.addEventListener('touchstart', (e) => {
+            isScrubbing = true;
+            handleScrub(e);
+        });
+    }
+
+    // Listen globally for movement so the handle doesn't get "stuck" if the mouse leaves the track
+    document.addEventListener('mousemove', handleScrub);
+    document.addEventListener('mouseup', () => { isScrubbing = false; });
+    document.addEventListener('touchmove', handleScrub);
+    document.addEventListener('touchend', () => { isScrubbing = false; });
 
     // --- Formation & Playbook UI Rendering ---
     const formationSelector = document.getElementById('formation-selector');
@@ -264,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Route Menu Logic ---
-    setLongPressHandler((nodeId, x, y) => {
+    setDoubleTapHandler((nodeId, x, y) => {
         activePlayerNodeId = nodeId;
         routeMenu.innerHTML = '';
         
